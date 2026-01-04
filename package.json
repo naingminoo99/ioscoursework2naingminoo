@@ -12,6 +12,7 @@
     "@next/mdx": "16.0.10",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "geist": "^1.5.1",
     "gray-matter": "^4.0.3",
     "lucide-react": "^0.562.0",
     "mssql": "^10.0.2",
