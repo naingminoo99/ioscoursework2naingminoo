@@ -1,136 +1,242 @@
 "use client";
 
-import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { AlertTriangle, Car, Activity, Zap, MapPin, Bus } from 'lucide-react';
-import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { useState } from 'react';
+import { AlertTriangle, Car, Activity, Zap, MapPin, Bus, BarChart3, Navigation, Wrench, Bell } from 'lucide-react';
+import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart } from 'recharts';
 
 export default function Dashboard() {
-  const [stats, setStats] = useState({ incidents: 0, fleetOnline: 0, trainFaults: 0, evUsage: 0 });
-  const [incidents, setIncidents] = useState<any[]>([]);
-  const [congestion, setCongestion] = useState<any[]>([]);
-  const [locations, setLocations] = useState<any[]>([]);
-  const [fleet, setFleet] = useState({ avgFuelMpg: 0, idleVehicles: 0, healthAlerts: 0 });
-  const [parking, setParking] = useState({ occupied: 0, available: 0, percentage: 0 });
-  const [evCharging, setEvCharging] = useState<{ data: any[], stations: { available: number, total: number } }>({ data: [], stations: { available: 0, total: 32 } });
+  const [stats] = useState({ incidents: 5, fleetOnline: 128, trainFaults: 2, evUsage: 85 });
+  const [incidents] = useState([
+    { location: 'Accident on Main St.', severity: 'CRITICAL', time: '13:34 PM' },
+    { location: 'Bus Overcrowded', severity: 'MEDIUM', time: '11:07 AM' },
+    { location: 'Train Signal Fault', severity: 'HIGH', time: '11:03 AM' }
+  ]);
+  
+  const congestionData = Array.from({ length: 20 }, (_, i) => ({
+    time: i,
+    level: 40 + Math.sin(i * 0.5) * 20 + Math.random() * 10
+  }));
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [statsRes, incidentsRes, congestionRes, locationsRes, fleetRes, parkingRes, evRes] = await Promise.all([
-          fetch('/api/stats'),
-          fetch('/api/incidents'),
-          fetch('/api/congestion'),
-          fetch('/api/locations'),
-          fetch('/api/fleet'),
-          fetch('/api/parking'),
-          fetch('/api/ev-charging'),
-        ]);
+  const predictiveData = [
+    { name: 'Mon', breakdowns: 8, delays: 5, highLoad: 12 },
+    { name: 'Tue', breakdowns: 12, delays: 8, highLoad: 15 },
+    { name: 'Wed', breakdowns: 6, delays: 4, highLoad: 10 },
+    { name: 'Thu', breakdowns: 10, delays: 6, highLoad: 13 },
+    { name: 'Fri', breakdowns: 15, delays: 10, highLoad: 18 },
+    { name: 'Sat', breakdowns: 5, delays: 3, highLoad: 8 },
+    { name: 'Sun', breakdowns: 4, delays: 2, highLoad: 6 }
+  ];
 
-        setStats(await statsRes.json());
-        setIncidents(await incidentsRes.json());
-        setCongestion(await congestionRes.json());
-        setLocations(await locationsRes.json());
-        setFleet(await fleetRes.json());
-        setParking(await parkingRes.json());
-        setEvCharging(await evRes.json());
-      } catch (error) {
-        console.error('Failed to fetch data:', error);
-      }
-    };
+  const incidentForecast = [
+    { day: 'Mon', incidents: 8 },
+    { day: 'Tue', incidents: 6 },
+    { day: 'Wed', incidents: 12 },
+    { day: 'Thu', incidents: 15 },
+    { day: 'Fri', incidents: 10 },
+    { day: 'Sat', incidents: 8 },
+    { day: 'Sun', incidents: 14 }
+  ];
 
-    fetchData();
-    const interval = setInterval(fetchData, 5000);
-    return () => clearInterval(interval);
-  }, []);
+  const evChargingData = Array.from({ length: 12 }, (_, i) => ({
+    time: i,
+    load: 250 + Math.random() * 150
+  }));
 
-  const StatCard = ({ title, value, subtitle, icon: Icon, color }: any) => (
-    <Card className="bg-white shadow-sm">
-      <CardContent className="p-6">
-        <div className="flex items-center justify-between mb-2">
-          <p className="text-sm font-medium text-slate-600">{title}</p>
-          <Icon className={`h-8 w-8 ${color}`} />
+  const parkingData = [
+    { name: 'Occupied', value: 145, color: '#3b82f6' },
+    { name: 'Available', value: 54, color: '#10b981' }
+  ];
+
+  const Card = ({ children, span }) => (
+    <div style={{
+      backgroundColor: 'white',
+      borderRadius: '0.5rem',
+      boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1)',
+      overflow: 'hidden',
+      gridColumn: span ? `span ${span}` : 'span 1'
+    }}>
+      {children}
+    </div>
+  );
+
+  const CardHeader = ({ children, border }) => (
+    <div style={{
+      padding: '1.5rem',
+      borderBottom: border ? '1px solid #e2e8f0' : 'none'
+    }}>
+      {children}
+    </div>
+  );
+
+  const CardContent = ({ children }) => (
+    <div style={{ padding: '1.5rem' }}>
+      {children}
+    </div>
+  );
+
+  const StatCard = ({ title, value, subtitle, icon: Icon, bgColor, iconColor }) => (
+    <Card>
+      <CardContent>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div>
+            <p style={{ fontSize: '0.875rem', fontWeight: '500', color: '#475569', marginBottom: '0.25rem' }}>{title}</p>
+            <p style={{ fontSize: '1.875rem', fontWeight: '700', color: '#1e293b', marginBottom: '0.25rem' }}>{value}</p>
+            <p style={{ fontSize: '0.75rem', color: '#64748b' }}>{subtitle}</p>
+          </div>
+          <div style={{
+            padding: '1rem',
+            borderRadius: '0.75rem',
+            backgroundColor: bgColor
+          }}>
+            <Icon style={{ height: '2rem', width: '2rem', color: iconColor }} />
+          </div>
         </div>
-        <div className={`text-3xl font-bold mb-1 ${color.replace('text-', 'text-')}`}>{value}</div>
-        <p className="text-xs text-slate-500">{subtitle}</p>
       </CardContent>
     </Card>
   );
 
-  const severityColor = (s) => s === 'CRITICAL' ? 'bg-red-600' : s === 'HIGH' ? 'bg-red-500' : s === 'MEDIUM' ? 'bg-orange-500' : 'bg-yellow-500';
-  const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444'];
-  const parkingData = [
-    { name: 'Occupied', value: parking.occupied },
-    { name: 'Available', value: parking.available }
-  ];
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-100 to-blue-50 p-6">
-      <div className="max-w-7xl mx-auto">
-        <h1 className="text-4xl font-bold text-slate-800 mb-8">Smart Transport Monitoring Dashboard</h1>
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(to bottom right, #f1f5f9, #dbeafe, #f1f5f9)',
+      padding: '1.5rem'
+    }}>
+      <div style={{ maxWidth: '80rem', margin: '0 auto' }}>
+        <h1 style={{ fontSize: '2.25rem', fontWeight: '700', color: '#1e293b', marginBottom: '2rem' }}>
+          Smart Transport Monitoring Dashboard
+        </h1>
 
         {/* Stats Row */}
-        <div className="grid grid-cols-4 gap-4 mb-6">
-          <StatCard title="Traffic Incidents" value={stats.incidents} subtitle="Active Alerts" icon={AlertTriangle} color="text-red-600" />
-          <StatCard title="Fleet Status" value={stats.fleetOnline} subtitle="Vehicles Online" icon={Car} color="text-green-600" />
-          <StatCard title="Train Faults" value={stats.trainFaults} subtitle="Issues Detected" icon={Activity} color="text-orange-600" />
-          <StatCard title="EV Chargers" value={`${stats.evUsage}%`} subtitle="In Use" icon={Zap} color="text-blue-600" />
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.5rem', marginBottom: '1.5rem' }}>
+          <StatCard 
+            title="Traffic Incidents" 
+            value={stats.incidents} 
+            subtitle="Active Alerts" 
+            icon={AlertTriangle} 
+            bgColor="#fee2e2"
+            iconColor="#dc2626"
+          />
+          <StatCard 
+            title="Fleet Status" 
+            value={stats.fleetOnline} 
+            subtitle="Vehicles Online" 
+            icon={Car} 
+            bgColor="#dcfce7"
+            iconColor="#16a34a"
+          />
+          <StatCard 
+            title="Train Faults" 
+            value={stats.trainFaults} 
+            subtitle="Issues Detected" 
+            icon={Activity} 
+            bgColor="#ffedd5"
+            iconColor="#ea580c"
+          />
+          <StatCard 
+            title="EV Chargers" 
+            value={`${stats.evUsage}%`} 
+            subtitle="In Use" 
+            icon={Zap} 
+            bgColor="#dbeafe"
+            iconColor="#2563eb"
+          />
         </div>
 
-        {/* Main Grid */}
-        <div className="grid grid-cols-3 gap-6 mb-6">
+        {/* Main Grid - City Overview and Alerts */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem', marginBottom: '1.5rem' }}>
           {/* City Map */}
-          <Card className="col-span-2">
-            <CardHeader><CardTitle className="flex items-center gap-2"><MapPin className="h-5 w-5" />City Overview</CardTitle></CardHeader>
+          <Card span={2}>
+            <CardHeader border>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1.125rem', fontWeight: '600', color: '#1e293b' }}>
+                <MapPin style={{ height: '1.25rem', width: '1.25rem' }} />
+                City Overview
+              </div>
+            </CardHeader>
             <CardContent>
-              <div className="relative h-80 bg-gradient-to-br from-blue-100 to-blue-200 rounded-lg overflow-hidden">
-                <svg className="absolute inset-0 opacity-20 w-full h-full">
-                  <line x1="10%" y1="50%" x2="90%" y2="50%" stroke="#64748b" strokeWidth="3" />
-                  <line x1="50%" y1="10%" x2="50%" y2="90%" stroke="#64748b" strokeWidth="3" />
-                  <line x1="20%" y1="20%" x2="80%" y2="80%" stroke="#64748b" strokeWidth="2" />
+              <div style={{ 
+                position: 'relative', 
+                height: '16rem', 
+                background: 'linear-gradient(to bottom right, #dbeafe, #eff6ff, #dcfce7)',
+                borderRadius: '0.75rem',
+                border: '2px solid #93c5fd',
+                overflow: 'hidden'
+              }}>
+                {/* Street Grid */}
+                <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0.3 }}>
+                  <line x1="0" y1="30%" x2="100%" y2="30%" stroke="#94a3b8" strokeWidth="2" />
+                  <line x1="0" y1="70%" x2="100%" y2="70%" stroke="#94a3b8" strokeWidth="2" />
+                  <line x1="30%" y1="0" x2="30%" y2="100%" stroke="#94a3b8" strokeWidth="2" />
+                  <line x1="70%" y1="0" x2="70%" y2="100%" stroke="#94a3b8" strokeWidth="2" />
                 </svg>
-                {locations.map((loc, i) => (
-                  <div
-                    key={i}
-                    className="absolute"
-                    style={{
-                      left: `${((loc.longitude - 103.6) / 0.4) * 100}%`,
-                      top: `${((1.47 - loc.latitude) / 0.24) * 100}%`,
-                    }}
-                  >
-                    {loc.sensorType === 'incident' && (
-                      <div className="relative group">
-                        <AlertTriangle className="h-7 w-7 text-red-600 drop-shadow-lg animate-pulse" />
-                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-black text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                          {loc.incidentLocation} - {loc.severity}
-                        </div>
-                      </div>
-                    )}
-                    {loc.sensorType === 'fleet' && <Car className="h-6 w-6 text-green-600 drop-shadow-lg" />}
-                    {loc.sensorType === 'ev' && <Zap className="h-6 w-6 text-blue-600 drop-shadow-lg" />}
-                    {loc.sensorType === 'bus' && <Bus className="h-6 w-6 text-purple-600 drop-shadow-lg" />}
+                
+                {/* Map Icons */}
+                <div style={{ position: 'absolute', left: '35%', top: '25%' }}>
+                  <div style={{ position: 'relative' }}>
+                    <div style={{ 
+                      position: 'absolute', 
+                      inset: '-0.5rem', 
+                      backgroundColor: '#ef4444', 
+                      borderRadius: '9999px', 
+                      opacity: 0.2,
+                      animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+                    }}></div>
+                    <AlertTriangle style={{ height: '2rem', width: '2rem', color: '#dc2626', filter: 'drop-shadow(0 4px 3px rgb(0 0 0 / 0.07))', position: 'relative', zIndex: 10 }} />
                   </div>
-                ))}
+                </div>
+                
+                <div style={{ position: 'absolute', left: '60%', top: '35%' }}>
+                  <div style={{ backgroundColor: 'white', padding: '0.5rem', borderRadius: '0.5rem', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}>
+                    <Bus style={{ height: '1.5rem', width: '1.5rem', color: '#16a34a' }} />
+                  </div>
+                </div>
+                
+                <div style={{ position: 'absolute', left: '25%', top: '55%' }}>
+                  <div style={{ backgroundColor: 'white', padding: '0.5rem', borderRadius: '0.5rem', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}>
+                    <Activity style={{ height: '1.5rem', width: '1.5rem', color: '#ea580c' }} />
+                  </div>
+                </div>
+                
+                <div style={{ position: 'absolute', left: '45%', top: '60%' }}>
+                  <div style={{ backgroundColor: '#3b82f6', color: 'white', padding: '0.75rem', borderRadius: '0.5rem', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', fontWeight: '700', fontSize: '1.125rem' }}>
+                    P
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* Alerts */}
+          {/* Anomaly Alerts */}
           <Card>
-            <CardHeader><CardTitle>Anomaly Alerts</CardTitle></CardHeader>
+            <CardHeader border>
+              <div style={{ fontSize: '1.125rem', fontWeight: '600', color: '#1e293b' }}>Anomaly Alerts</div>
+            </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {incidents.slice(0, 5).map((inc, i) => (
-                  <div key={i} className="flex items-start gap-3 p-3 bg-slate-50 rounded-lg">
-                    <AlertTriangle className={`h-5 w-5 ${inc.severity === 'CRITICAL' ? 'text-red-600' : inc.severity === 'HIGH' ? 'text-red-500' : 'text-orange-500'}`} />
-                    <div className="flex-1">
-                      <div className="flex justify-between items-center mb-1">
-                        <p className="font-medium text-sm">{inc.incidentLocation || 'Unknown Location'}</p>
-                        <span className={`px-2 py-0.5 rounded text-xs font-medium text-white ${severityColor(inc.severity)}`}>
-                          {inc.severity === 'CRITICAL' ? 'Critical' : inc.severity === 'HIGH' ? 'Alert' : 'Warning'}
-                        </span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                {incidents.map((inc, i) => (
+                  <div key={i} style={{ borderLeft: '4px solid #ef4444', backgroundColor: '#f8fafc', padding: '0.75rem', borderRadius: '0 0.5rem 0.5rem 0' }}>
+                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
+                      <AlertTriangle style={{ 
+                        height: '1.25rem', 
+                        width: '1.25rem', 
+                        marginTop: '0.125rem',
+                        color: inc.severity === 'CRITICAL' ? '#dc2626' : inc.severity === 'HIGH' ? '#ef4444' : '#f97316'
+                      }} />
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.25rem' }}>
+                          <p style={{ fontWeight: '600', fontSize: '0.875rem', color: '#1e293b' }}>{inc.location}</p>
+                          <span style={{
+                            padding: '0.125rem 0.5rem',
+                            borderRadius: '0.25rem',
+                            fontSize: '0.75rem',
+                            fontWeight: '600',
+                            backgroundColor: inc.severity === 'CRITICAL' ? '#dc2626' : inc.severity === 'HIGH' ? '#ef4444' : '#f97316',
+                            color: 'white'
+                          }}>
+                            {inc.severity === 'CRITICAL' ? 'Critical' : inc.severity === 'HIGH' ? 'Alert' : 'Warning'}
+                          </span>
+                        </div>
+                        <p style={{ fontSize: '0.75rem', color: '#64748b' }}>{inc.time}</p>
                       </div>
-                      <p className="text-xs text-slate-500">{new Date(inc.timestamp).toLocaleTimeString()}</p>
                     </div>
                   </div>
                 ))}
@@ -139,52 +245,64 @@ export default function Dashboard() {
           </Card>
         </div>
 
-        {/* Second Row */}
-        <div className="grid grid-cols-3 gap-6 mb-6">
+        {/* Second Row - Analytics */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem', marginBottom: '1.5rem' }}>
           {/* Traffic Congestion */}
           <Card>
-            <CardHeader><CardTitle>Traffic Congestion</CardTitle></CardHeader>
+            <CardHeader border>
+              <div style={{ fontSize: '1.125rem', fontWeight: '600', color: '#1e293b' }}>Traffic Congestion</div>
+            </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={150}>
-                <LineChart data={congestion}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                  <XAxis dataKey="timestamp" hide />
-                  <YAxis hide />
-                  <Line type="monotone" dataKey="trafficDensity" stroke="#ef4444" strokeWidth={3} dot={false} />
-                </LineChart>
+              <p style={{ fontSize: '0.875rem', color: '#475569', marginBottom: '1rem' }}>Congestion Level</p>
+              <ResponsiveContainer width="100%" height={120}>
+                <AreaChart data={congestionData}>
+                  <defs>
+                    <linearGradient id="congestionGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="#ef4444" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <Area type="monotone" dataKey="level" stroke="#ef4444" strokeWidth={3} fill="url(#congestionGradient)" />
+                </AreaChart>
               </ResponsiveContainer>
-              <div className="mt-4 flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-red-600 animate-pulse" />
-                <span className="text-sm font-medium text-red-600">High Congestion</span>
+              <div style={{ marginTop: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <div style={{ width: '0.75rem', height: '0.75rem', borderRadius: '9999px', backgroundColor: '#dc2626', animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' }}></div>
+                <span style={{ fontSize: '0.875rem', fontWeight: '600', color: '#dc2626' }}>High Congestion</span>
               </div>
             </CardContent>
           </Card>
 
           {/* Predictive Analytics */}
-          <Card className="col-span-2">
-            <CardHeader><CardTitle>EV Charging Status</CardTitle></CardHeader>
+          <Card span={2}>
+            <CardHeader border>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div>
+                  <div style={{ fontSize: '1.125rem', fontWeight: '600', color: '#1e293b' }}>Predictive Analytics</div>
+                  <p style={{ fontSize: '0.875rem', color: '#475569', marginTop: '0.25rem' }}>Incident Forecast</p>
+                </div>
+                <BarChart3 style={{ height: '1.25rem', width: '1.25rem', color: '#94a3b8' }} />
+              </div>
+            </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={150}>
-                <BarChart data={evCharging.data}>
-                  <Bar dataKey="currentKw" radius={[4, 4, 0, 0]}>
-                    {evCharging.data.map((entry: any, i: number) => (
-                      <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                    ))}
-                  </Bar>
+              <ResponsiveContainer width="100%" height={140}>
+                <BarChart data={predictiveData}>
+                  <Bar dataKey="breakdowns" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="delays" fill="#10b981" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="highLoad" fill="#f59e0b" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
-              <div className="grid grid-cols-3 gap-4 mt-4 text-center">
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginTop: '1.5rem', textAlign: 'center' }}>
                 <div>
-                  <div className="text-2xl font-bold">{evCharging.data[evCharging.data.length - 1]?.currentKw || 0}</div>
-                  <div className="text-xs text-slate-500">Current Load (kW)</div>
+                  <div style={{ fontSize: '1.875rem', fontWeight: '700', color: '#1e293b' }}>12</div>
+                  <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: '500' }}>Breakdowns</div>
                 </div>
                 <div>
-                  <div className="text-2xl font-bold">{evCharging.stations.available}</div>
-                  <div className="text-xs text-slate-500">Available Stations</div>
+                  <div style={{ fontSize: '1.875rem', fontWeight: '700', color: '#1e293b' }}>8</div>
+                  <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: '500' }}>Delays</div>
                 </div>
                 <div>
-                  <div className="text-2xl font-bold">{evCharging.stations.total}</div>
-                  <div className="text-xs text-slate-500">Total Stations</div>
+                  <div style={{ fontSize: '1.875rem', fontWeight: '700', color: '#1e293b' }}>15</div>
+                  <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: '500' }}>High Load</div>
                 </div>
               </div>
             </CardContent>
@@ -192,74 +310,96 @@ export default function Dashboard() {
         </div>
 
         {/* Bottom Row */}
-        <div className="grid grid-cols-3 gap-6">
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem', marginBottom: '1.5rem' }}>
           {/* Parking */}
           <Card>
-            <CardHeader><CardTitle>Parking Availability</CardTitle></CardHeader>
+            <CardHeader border>
+              <div style={{ fontSize: '1.125rem', fontWeight: '600', color: '#1e293b' }}>Parking Availability</div>
+            </CardHeader>
             <CardContent>
-              <div className="flex items-center justify-center mb-4 relative">
-                <ResponsiveContainer width="100%" height={140}>
+              <div style={{ position: 'relative', marginBottom: '1rem' }}>
+                <ResponsiveContainer width="100%" height={160}>
                   <PieChart>
                     <Pie 
                       data={parkingData} 
                       cx="50%" 
                       cy="50%" 
-                      innerRadius={45} 
-                      outerRadius={65} 
+                      innerRadius={50} 
+                      outerRadius={70} 
                       dataKey="value"
+                      startAngle={90}
+                      endAngle={-270}
                     >
-                      <Cell fill="#ef4444" />
-                      <Cell fill="#10b981" />
+                      {parkingData.map((entry, i) => (
+                        <Cell key={i} fill={entry.color} />
+                      ))}
                     </Pie>
                   </PieChart>
                 </ResponsiveContainer>
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="text-center">
-                    <div className="text-3xl font-bold">{parking.percentage}%</div>
-                    <div className="text-xs text-slate-500">Full</div>
+                <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <div style={{ textAlign: 'center' }}>
+                    <div style={{ fontSize: '2.25rem', fontWeight: '700', color: '#1e293b' }}>73%</div>
+                    <div style={{ fontSize: '0.875rem', color: '#64748b', fontWeight: '500' }}>Full</div>
                   </div>
                 </div>
               </div>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between"><span className="text-slate-600">Available</span><span className="font-bold">{parking.available}</span></div>
-                <div className="flex justify-between"><span className="text-slate-600">Occupied</span><span className="font-bold">{parking.occupied}</span></div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', fontSize: '0.875rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ color: '#475569' }}>Available</span>
+                  <span style={{ fontWeight: '700', color: '#1e293b' }}>54</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ color: '#475569' }}>Occupied</span>
+                  <span style={{ fontWeight: '700', color: '#1e293b' }}>145</span>
+                </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* Fleet */}
+          {/* Fleet Monitoring */}
           <Card>
-            <CardHeader><CardTitle>Fleet Monitoring</CardTitle></CardHeader>
+            <CardHeader border>
+              <div style={{ fontSize: '1.125rem', fontWeight: '600', color: '#1e293b' }}>Fleet Monitoring</div>
+            </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                <div className="grid grid-cols-3 items-center text-center">
-                  <span className="text-sm text-slate-600">Avg. Fuel Usage</span>
-                  <span className="text-3xl font-bold">{fleet.avgFuelMpg?.toFixed(1) || 0}</span>
-                  <span className="text-sm text-slate-500">MPG</span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                <div style={{ textAlign: 'center' }}>
+                  <p style={{ fontSize: '0.875rem', color: '#475569', marginBottom: '0.5rem' }}>Avg. Fuel Usage</p>
+                  <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: '0.5rem' }}>
+                    <span style={{ fontSize: '2.25rem', fontWeight: '700', color: '#1e293b' }}>22.8</span>
+                    <span style={{ fontSize: '1.125rem', color: '#64748b' }}>MPG</span>
+                  </div>
                 </div>
-                <div className="grid grid-cols-3 items-center text-center">
-                  <span className="text-sm text-slate-600">Idle Vehicles</span>
-                  <span className="text-3xl font-bold">{fleet.idleVehicles || 0}</span>
-                  <span className="text-sm text-slate-500">Units</span>
+                <div style={{ textAlign: 'center' }}>
+                  <p style={{ fontSize: '0.875rem', color: '#475569', marginBottom: '0.5rem' }}>Idle Vehicles</p>
+                  <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: '0.5rem' }}>
+                    <span style={{ fontSize: '2.25rem', fontWeight: '700', color: '#1e293b' }}>18</span>
+                    <span style={{ fontSize: '1.125rem', color: '#64748b' }}>Units</span>
+                  </div>
                 </div>
-                <div className="grid grid-cols-3 items-center text-center">
-                  <span className="text-sm text-slate-600">Health Alerts</span>
-                  <span className="text-3xl font-bold text-red-600">{fleet.healthAlerts || 0}</span>
-                  <span className="text-sm text-slate-500">Active</span>
+                <div style={{ textAlign: 'center' }}>
+                  <p style={{ fontSize: '0.875rem', color: '#475569', marginBottom: '0.5rem' }}>Health Alerts</p>
+                  <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: '0.5rem' }}>
+                    <span style={{ fontSize: '2.25rem', fontWeight: '700', color: '#dc2626' }}>5</span>
+                    <span style={{ fontSize: '1.125rem', color: '#64748b' }}>Active</span>
+                  </div>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* Incidents Chart */}
+          {/* Predictive Analytics - Incident Forecast */}
           <Card>
-            <CardHeader><CardTitle>Incident Trends</CardTitle></CardHeader>
+            <CardHeader border>
+              <div style={{ fontSize: '1.125rem', fontWeight: '600', color: '#1e293b' }}>Predictive Analytics</div>
+              <p style={{ fontSize: '0.875rem', color: '#475569', marginTop: '0.25rem' }}>Incident Forecast</p>
+            </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={140}>
-                <BarChart data={incidents.slice(0, 7)}>
-                  <Bar dataKey="severity" radius={[4, 4, 0, 0]}>
-                    {incidents.slice(0, 7).map((entry: any, i: number) => (
-                      <Cell key={i} fill={entry.severity === 'CRITICAL' ? '#ef4444' : entry.severity === 'HIGH' ? '#f59e0b' : '#3b82f6'} />
+                <BarChart data={incidentForecast}>
+                  <Bar dataKey="incidents" radius={[4, 4, 0, 0]}>
+                    {incidentForecast.map((entry, i) => (
+                      <Cell key={i} fill={i === 3 ? '#ef4444' : i === 4 ? '#f59e0b' : '#3b82f6'} />
                     ))}
                   </Bar>
                 </BarChart>
@@ -267,7 +407,135 @@ export default function Dashboard() {
             </CardContent>
           </Card>
         </div>
+
+        {/* EV Charging and Operations */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem' }}>
+          <Card span={2}>
+            <CardHeader border>
+              <div style={{ fontSize: '1.125rem', fontWeight: '600', color: '#1e293b' }}>EV Charging Status</div>
+            </CardHeader>
+            <CardContent>
+              <div style={{ marginBottom: '1rem' }}>
+                <p style={{ fontSize: '0.875rem', color: '#475569', marginBottom: '0.5rem' }}>Current Load</p>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem' }}>
+                  <span style={{ fontSize: '2.25rem', fontWeight: '700', color: '#1e293b' }}>320</span>
+                  <span style={{ fontSize: '1.125rem', color: '#64748b' }}>kW</span>
+                </div>
+              </div>
+              <ResponsiveContainer width="100%" height={100}>
+                <BarChart data={evChargingData}>
+                  <Bar dataKey="load" radius={[4, 4, 0, 0]}>
+                    {evChargingData.map((entry, i) => (
+                      <Cell key={i} fill={i % 2 === 0 ? '#3b82f6' : '#60a5fa'} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+              <div style={{ marginTop: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span style={{ fontSize: '0.875rem', color: '#475569' }}>Stations Available</span>
+                <span style={{ fontSize: '1.125rem', fontWeight: '700', color: '#1e293b' }}>8 / 32</span>
+              </div>
+              <div style={{ marginTop: '0.5rem', height: '0.5rem', backgroundColor: '#e2e8f0', borderRadius: '9999px', overflow: 'hidden' }}>
+                <div style={{ height: '100%', backgroundColor: '#3b82f6', borderRadius: '9999px', width: '25%' }}></div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Operational Actions */}
+          <Card>
+            <CardHeader border>
+              <div style={{ fontSize: '1.125rem', fontWeight: '600', color: '#1e293b' }}>Operational Actions</div>
+            </CardHeader>
+            <CardContent>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                <button style={{
+                  width: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.5rem',
+                  padding: '0.75rem 1rem',
+                  backgroundColor: '#2563eb',
+                  color: 'white',
+                  borderRadius: '0.5rem',
+                  fontWeight: '500',
+                  border: 'none',
+                  cursor: 'pointer',
+                  transition: 'background-color 0.2s'
+                }}>
+                  <Navigation style={{ height: '1rem', width: '1rem' }} />
+                  Reroute Traffic
+                </button>
+                <button style={{
+                  width: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.5rem',
+                  padding: '0.75rem 1rem',
+                  backgroundColor: '#475569',
+                  color: 'white',
+                  borderRadius: '0.5rem',
+                  fontWeight: '500',
+                  border: 'none',
+                  cursor: 'pointer',
+                  transition: 'background-color 0.2s'
+                }}>
+                  <Wrench style={{ height: '1rem', width: '1rem' }} />
+                  Dispatch Maintenance
+                </button>
+                <button style={{
+                  width: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.5rem',
+                  padding: '0.75rem 1rem',
+                  backgroundColor: '#dc2626',
+                  color: 'white',
+                  borderRadius: '0.5rem',
+                  fontWeight: '500',
+                  border: 'none',
+                  cursor: 'pointer',
+                  transition: 'background-color 0.2s'
+                }}>
+                  <Bell style={{ height: '1rem', width: '1rem' }} />
+                  Send Alert
+                </button>
+                <button style={{
+                  width: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.5rem',
+                  padding: '0.75rem 1rem',
+                  backgroundColor: '#334155',
+                  color: 'white',
+                  borderRadius: '0.5rem',
+                  fontWeight: '500',
+                  border: 'none',
+                  cursor: 'pointer',
+                  transition: 'background-color 0.2s'
+                }}>
+                  <BarChart3 style={{ height: '1rem', width: '1rem' }} />
+                  View Reports
+                </button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
+      
+      <style>{`
+        @keyframes pulse {
+          0%, 100% {
+            opacity: 1;
+          }
+          50% {
+            opacity: .5;
+          }
+        }
+      `}</style>
     </div>
   );
 }

@@ -3,8 +3,6 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { Roboto_Condensed } from 'next/font/google';
 import { Suspense } from "react";
 
-import "./globals.css";
-
 const robotoCondensed = Roboto_Condensed({
   variable: '--font-roboto-condensed',
   subsets: ['latin'],
